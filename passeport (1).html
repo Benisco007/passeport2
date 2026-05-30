@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Passport Application — طلب جواز السفر</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Amiri:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+:root{
+  --navy:#0b1d3a; --navy2:#162f5c; --navy3:#1e3f7a;
+  --gold:#c8a84b; --gold2:#e6c96a; --gold3:#f5e4a8;
+  --bg:#eef1f7; --surface:#ffffff; --border:#d0d9ec;
+  --muted:#647592; --text:#0b1d3a; --success:#1a6645;
+  --danger:#c0392b; --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.arabic{font-family:'Amiri',serif;direction:rtl;text-align:right;}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;flex-direction:column;}
+.page.active{display:flex;}
+
+/* PAGE 1 — FORM */
+#p1{background:var(--bg);}
+.p1-header{
+  background:var(--navy); padding:26px 20px 22px; text-align:center; position:relative; overflow:hidden;
+}
+.p1-header::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(45deg,rgba(200,168,75,.04) 0,rgba(200,168,75,.04) 1px,transparent 1px,transparent 22px);
+}
+.hdr-flag{font-size:2.5rem;margin-bottom:10px;position:relative;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));}
+.hdr-badge{
+  display:inline-flex;align-items:center;gap:6px; background:rgba(200,168,75,.15);border:1px solid rgba(200,168,75,.3);
+  color:var(--gold2);padding:4px 14px;border-radius:30px; font-size:.58rem;letter-spacing:3px;text-transform:uppercase; margin-bottom:12px;position:relative;
+}
+.hdr-title{
+  font-family:'Cormorant Garamond',serif; font-size:1.7rem;font-weight:700;color:#fff;letter-spacing:2px; position:relative;line-height:1.3;
+}
+.hdr-title em{color:var(--gold2);font-style:normal;}
+.hdr-arabic{
+  font-family:'Amiri',serif;font-size:1.2rem; color:rgba(200,168,75,.8);margin-top:6px; position:relative;direction:rtl;
+}
+.prog-bar{
+  display:flex;align-items:center;justify-content:center; gap:8px;padding:16px 20px; background:var(--surface);border-bottom:1px solid var(--border);
+}
+.pdot{
+  width:28px;height:28px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:.62rem;font-weight:700; border:2px solid var(--border);color:var(--muted); background:var(--bg);transition:all .3s;
+}
+.pdot.on{background:var(--navy);border-color:var(--navy);color:var(--gold2);}
+.pdot.ok{background:var(--success);border-color:var(--success);color:#fff;}
+.plbl{font-size:.58rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.plbl.on{color:var(--navy);}
+.pline{width:22px;height:2px;background:var(--border);border-radius:2px;}
+.pline.ok{background:var(--success);}
+
+.fbody{padding:14px;flex:1;max-width:560px;width:100%;margin:0 auto;}
+.fsec{ background:var(--surface);border:1px solid var(--border); border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
+.shead{ background:linear-gradient(135deg,var(--navy),var(--navy2)); padding:13px 16px;display:flex;align-items:center;justify-content:space-between;}
+.shead-en{font-family:'Cormorant Garamond',serif;font-size:.9rem;font-weight:700;color:var(--gold2);letter-spacing:2px;text-transform:uppercase;}
+.shead-ar{font-family:'Amiri',serif;font-size:1rem;color:rgba(200,168,75,.9);direction:rtl;}
+.sfields{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:1px;}
+.lbl-en{font-size:.58rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.lbl-ar{font-family:'Amiri',serif;font-size:.75rem;color:var(--muted);direction:rtl;}
+.fg input,.fg select,.fg textarea{
+  background:var(--bg);border:1.5px solid var(--border); border-radius:10px;padding:11px 13px; font-family:'DM Sans',sans-serif;font-size:.85rem; color:var(--text);transition:border-color .2s,box-shadow .2s; width:100%;-webkit-appearance:none;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{ outline:none;border-color:var(--navy2);box-shadow:0 0 0 3px rgba(22,47,92,.1);}
+.fg select{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23647592' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat;background-position:right 13px center;}
+.req::after{content:' *';color:var(--danger);font-size:.85em;font-weight:bold;}
+.err-msg{font-size:.65rem;color:var(--danger);display:none;margin-top:2px;font-weight:bold;}
+.fg.has-err input, .fg.has-err select, .fg.has-err .up-zone{border-color:var(--danger);background-color:#fff3f3;}
+.fg.has-err .err-msg{display:block;}
+
+.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.skill-item{
+  display:flex;align-items:center;gap:8px; background:var(--bg);border:1.5px solid var(--border); border-radius:10px;padding:10px 12px;cursor:pointer; transition:border-color .2s,background .2s;
+}
+.skill-item:has(input:checked){border-color:var(--navy2);background:#e8edf8;}
+.skill-item input{width:16px;height:16px;accent-color:var(--navy);cursor:pointer;flex-shrink:0;}
+.skill-texts{display:flex;flex-direction:column;gap:2px;width:100%;}
+.skill-en{font-size:.72rem;font-weight:600;color:var(--text);}
+.skill-ar{font-family:'Amiri',serif;font-size:.75rem;color:var(--muted);direction:rtl;text-align:right;}
+
+.up-zone{ border:2px dashed var(--border);border-radius:12px; padding:18px;text-align:center;cursor:pointer; transition:all .2s;background:var(--bg);}
+.up-zone:hover{border-color:var(--navy2);background:#e8edf8;}
+.up-zone.filled{border-color:var(--success);border-style:solid;background:#f0faf5;}
+.up-zone input{display:none;}
+.up-icon{font-size:1.8rem;margin-bottom:6px;}
+.up-title-en{font-weight:600;font-size:.8rem;color:var(--text);margin-bottom:2px;}
+.up-title-ar{font-family:'Amiri',serif;font-size:.85rem;color:var(--muted);direction:rtl;margin-bottom:4px;}
+.up-sub{font-size:.65rem;color:var(--muted);}
+.up-prev{display:none;align-items:center;gap:12px;text-align:left;}
+.up-prev.show{display:flex;}
+.up-thumb{ width:50px;height:58px;border-radius:6px;overflow:hidden; border:2px solid var(--gold);flex-shrink:0; background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+.up-thumb img{width:100%;height:100%;object-fit:cover;}
+.btn-rm{background:none;border:none;cursor:pointer;color:var(--danger);font-size:.9rem;padding:4px;font-weight:bold;}
+
+.wrap-submit{padding:0 14px;max-width:560px;width:100%;margin:0 auto 28px;}
+.btn-submit{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:4px; flex-direction:column; background:linear-gradient(135deg,var(--navy),var(--navy2)); color:var(--gold2);border:none;border-radius:14px; padding:16px;font-family:'DM Sans',sans-serif; font-weight:600;font-size:.85rem; letter-spacing:1.5px;text-transform:uppercase; cursor:pointer;box-shadow:0 8px 28px rgba(11,29,58,.2); transition:transform .15s,box-shadow .2s;
+}
+.btn-submit span.ar{font-family:'Amiri',serif;font-size:1.1rem;letter-spacing:0;font-weight:700;color:rgba(200,168,75,.9);text-transform:none;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(11,29,58,.28);}
+
+/* PAGE 2 — PREVIEW & SPECIMEN */
+#p2{background:#f3f5f9; padding:10px 0;}
+.p2in{max-width:720px; width:100%; margin:0 auto; padding:10px;}
+
+.ldr-blk{display:none; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px;}
+.ldr-spinner {
+  width: 50px; height: 50px;
+  border: 5px solid rgba(11, 29, 58, 0.1);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ldr-title{font-size:1.2rem; color:var(--navy); font-weight:700; text-align:center;}
+
+.ppwrap{display:none; flex-direction:column; gap:20px;}
+.ppwrap.show{display:flex;}
+
+.agency-doc{
+  background:#ffffff; border:1px solid #c0c0c0; padding:20px; font-family:'Arial',sans-serif; color:#000; box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+.agency-hdr{
+  display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #000; padding-bottom:10px; margin-bottom:15px; gap:10px;
+}
+.agency-logo-txt{ font-size:1.1rem; font-weight:bold; color:#0b1d3a; line-height:1.2; text-transform:uppercase;}
+.agency-logo-txt span{ font-size:0.8rem; color:#be9438; display:block; font-family:'Amiri',serif;}
+.agency-hdr-center{ text-align:center; font-weight:bold; font-size:1.1rem; flex:1;}
+.agency-hdr-center div{ font-size:0.85rem; font-family:'Amiri',serif; color:#555;}
+.benin-flag-block{ width:65px; height:40px; display:grid; grid-template-columns:1fr 1.5fr; border:1px solid #999; flex-shrink:0;}
+.bf-green{ background:#008751;}
+.bf-right{ display:grid; grid-template-rows:1fr 1fr;}
+.bf-yellow{ background:#FFEB3B;}
+.bf-red{ background:#E53935;}
+
+.profile-section{ display:grid; grid-template-columns:160px 1fr; gap:20px; margin-bottom:15px;}
+.full-photo-box{ border:1px solid #000; height:220px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.full-photo-box img{ width:100%; height:100%; object-fit:cover;}
+
+.doc-table{ width:100%; border-collapse:collapse; margin-bottom:15px; font-size:0.85rem;}
+.doc-table th{ background:#0b1d3a; color:#fff; padding:6px 10px; text-align:left; font-size:0.85rem; text-transform:uppercase;}
+.doc-table th.ar-th{ font-family:'Amiri',serif; text-align:right; font-size:0.95rem;}
+.doc-table td{ border:1px solid #aaa; padding:8px; vertical-align:middle;}
+.w-25 { width:25%; }
+.w-30{ width:30%; font-weight:bold; background:#f9f9f9;}
+.w-20{ width:20%;}
+
+.passport-specimen {
+  background: #112547; color: white; border-radius: 12px; padding: 15px; font-family: 'Courier Prime', monospace; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.pp-spec-hdr { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; margin-bottom: 10px; }
+.pp-spec-title { font-weight: bold; font-size: 0.9rem; color: #e6c96a; }
+.pp-spec-title span { display: block; font-size: 0.65rem; color: #fff; }
+.passport-grid { display: grid; grid-template-columns: 120px 1fr; gap: 15px; }
+.pass-photo { border: 2px solid #e6c96a; height: 150px; background: #0b1d3a; overflow: hidden; }
+.pass-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pass-details { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.7rem; }
+.p-field { display: flex; flex-direction: column; }
+.p-lbl { color: #647592; font-size: 0.55rem; text-transform: uppercase; }
+.p-val { font-weight: bold; color: #fff; }
+.pass-sig-block { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 5px; margin-top: 5px; }
+.pp-spec-mrz { background: #fff; color: #000; padding: 8px; border-radius: 6px; margin-top: 12px; font-size: 0.75rem; font-weight: bold; letter-spacing: 1px; }
+
+.conf-card{ background:#fff; border:1px solid #d0d9ec; border-radius:12px; padding:15px; margin-top:15px;}
+.conf-btns{ display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+.btn-yes, .btn-no, .btn-dl{ width:100%; padding:14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; border:none; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;}
+.btn-yes{ background:#1a6645; color:#fff;}
+.btn-no{ background:#e0e0e0; color:#333;}
+.btn-dl{ background:#0b1d3a; color:#e6c96a; box-shadow:0 4px 12px rgba(11,29,58,0.15);}
+
+@media(max-width: 600px){
+  .agency-hdr{ flex-direction:column; text-align:center; gap:12px; }
+  .profile-section{ grid-template-columns:1fr; justify-content:center; justify-items:center; }
+  .full-photo-box{ width:160px; }
+  .passport-grid{ grid-template-columns:1fr; justify-items:center;}
+  .pass-photo{ width:130px; height:165px; }
+  .pass-details{ grid-template-columns:1fr; width:100%; }
+}
+
+/* PAGE 3 — SUCCESS */
+#p3{background:var(--navy); color:#fff; text-align:center; padding:60px 20px;}
+.suc-ring{ width:70px; height:70px; border-radius:50%; background:rgba(26,102,69,0.2); border:2px solid #1a6645; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:2rem; color:#6fcf97;}
+.btn-home{ background:var(--gold); color:var(--navy); padding:14px; border:none; border-radius:8px; width:100%; max-width:280px; cursor:pointer; font-weight:bold; margin-top:20px;}
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 — FORM -->
+<div class="page active" id="p1">
+  <div class="p1-header">
+    <div class="hdr-flag">🇧🇯</div>
+    <div class="hdr-badge">🌐 Recruitment System</div>
+    <div class="hdr-title">Passport & CV <em>Application</em></div>
+    <div class="hdr-arabic">نظام تسجيل الطلبات — وكالة مدينا حسين</div>
+  </div>
+
+  <div class="prog-bar">
+    <div style="display:flex;align-items:center;gap:6px;"><div class="pdot on" id="pd1">1</div><div class="plbl on">Form</div></div>
+    <div class="pline" id="pl1"></div>
+    <div style="display:flex;align-items:center;gap:6px;"><div class="pdot" id="pd2">2</div><div class="plbl" id="pl2l">Review</div></div>
+    <div class="pline" id="pl2"></div>
+    <div style="display:flex;align-items:center;gap:6px;"><div class="pdot" id="pd3">3</div><div class="plbl" id="pl3l">Done</div></div>
+  </div>
+
+  <div class="fbody">
+    <!-- PERSONAL IDENTITY -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">👤 Personal Identity</span><span class="shead-ar">الهوية الشخصية</span></div>
+      <div class="sfields">
+        <div class="frow">
+          <div class="fg" id="fg-nom">
+            <div class="fg-lbl"><span class="lbl-en req">Surname</span><span class="lbl-ar arabic">اللقب</span></div>
+            <input type="text" id="nom" placeholder="e.g. TOSSAVI"/>
+            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+          </div>
+          <div class="fg" id="fg-prenom">
+            <div class="fg-lbl"><span class="lbl-en req">Given Names</span><span class="lbl-ar arabic">الاسم الكامل</span></div>
+            <input type="text" id="prenom" placeholder="e.g. Affi Philomene"/>
+            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg" id="fg-dob">
+            <div class="fg-lbl"><span class="lbl-en req">Date of Birth</span><span class="lbl-ar arabic">تاريخ الميلاد</span></div>
+            <input type="date" id="dob"/>
+            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Age</span><span class="lbl-ar arabic">العمر</span></div>
+            <input type="number" id="age" placeholder="Auto" readonly style="background:#f0f4fa; font-weight:bold;"/>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg" id="fg-sex">
+            <div class="fg-lbl"><span class="lbl-en req">Sex</span><span class="lbl-ar arabic">الجنس</span></div>
+            <select id="sex">
+              <option value="">— Select —</option>
+              <option value="M">Male / ذكر</option>
+              <option value="F">Female / أنثى</option>
+            </select>
+            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+          </div>
+          <div class="fg" id="fg-nat">
+            <div class="fg-lbl"><span class="lbl-en req">Nationality</span><span class="lbl-ar arabic">الجنسية</span></div>
+            <input type="text" id="nat" value="BENINESE"/>
+            <div class="err-msg">Required</div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Religion</span><span class="lbl-ar arabic">الديانة</span></div>
+            <select id="religion">
+              <option value="CHRISTIAN">Christian / مسيحي</option>
+              <option value="MUSLIM">Muslim / مسلم</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Marital Status</span><span class="lbl-ar arabic">الحالة الاجتماعية</span></div>
+            <select id="marital">
+              <option value="SINGLE">Single / أعزب</option>
+              <option value="MARRIED">Married / متزوج</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Place of Birth</span><span class="lbl-ar arabic">مكان الميلاد</span></div>
+            <input type="text" id="pob" value="COTONOU"/>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">No. of Children</span><span class="lbl-ar arabic">عدد الأطفال</span></div>
+            <input type="number" id="children" value="0"/>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Height (m)</span><span class="lbl-ar arabic">الطول</span></div>
+            <input type="text" id="height" placeholder="e.g. 1.52 CM"/>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Weight (kg)</span><span class="lbl-ar arabic">الوزن</span></div>
+            <input type="text" id="weight" placeholder="e.g. 60 KG"/>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Mobile Number</span></div>
+            <input type="text" id="mobile" placeholder="e.g. 65938288"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSPORT OFFICIAL DETAILS (Ajouté car requis par les scripts) -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">🛂 Passport Data</span><span class="shead-ar">بيانات جواز السفر</span></div>
+      <div class="sfields">
+        <div class="frow">
+          <div class="fg" id="fg-ppnum">
+            <div class="fg-lbl"><span class="lbl-en req">Passport No.</span></div>
+            <input type="text" id="ppnum" placeholder="e.g. PP00442882"/>
+            <div class="err-msg">This field is mandatory</div>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">NPI Number</span></div>
+            <input type="text" id="ppnpi" placeholder="e.g. 123456789"/>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Date of Issue</span></div>
+            <input type="date" id="ppissue"/>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Date of Expiry</span></div>
+            <input type="date" id="ppexp"/>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Place of Issue</span></div>
+            <input type="text" id="ppplace" value="COTONOU"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANGUAGES KNOWLEDGE -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">🗣️ Languages Knowledge</span><span class="shead-ar">اللغات واللهجات</span></div>
+      <div class="sfields">
+        <div class="skills-grid">
+          <label class="skill-item">
+            <input type="checkbox" id="lang-en-chk" checked/>
+            <div class="skill-texts">
+              <span class="skill-en">English Language</span>
+              <span class="skill-ar">اللغة الإنجليزية</span>
+            </div>
+          </label>
+          <label class="skill-item">
+            <input type="checkbox" id="lang-ar-chk" checked/>
+            <div class="skill-texts">
+              <span class="skill-en">Arabic Language</span>
+              <span class="skill-ar">اللغة العربية</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDUCATION -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">🎓 Education</span><span class="shead-ar">التعليم</span></div>
+      <div class="sfields">
+        <div class="fg">
+          <div class="fg-lbl"><span class="lbl-en">Primary School</span><span class="lbl-ar arabic">المدرسة الابتدائية</span></div>
+          <input type="text" id="primary" placeholder="Primary school details"/>
+        </div>
+        <div class="fg">
+          <div class="fg-lbl"><span class="lbl-en">High School</span><span class="lbl-ar arabic">المدرسة الثانوية</span></div>
+          <input type="text" id="highschool" placeholder="High school details"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK EXPERIENCE -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">💼 Work Experience</span><span class="shead-ar">خبرة العمل</span></div>
+      <div class="sfields">
+        <div class="frow3">
+          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Country</span><span class="lbl-ar arabic">البلد</span></div><input type="text" id="work-country" value="BAHRAIN"/></div>
+          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Period</span><span class="lbl-ar arabic">المدة</span></div><input type="text" id="work-period" placeholder="e.g. 2 YEARS"/></div>
+          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Duration</span><span class="lbl-ar arabic">تاريخ</span></div><input type="text" id="work-dur" placeholder="e.g. 2 YEARS"/></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYMENT DETAILS -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">📋 Employment Details</span><span class="shead-ar">تفاصيل العمل</span></div>
+      <div class="sfields">
+        <div class="frow">
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Designation</span><span class="lbl-ar arabic">المهنة</span></div>
+            <input type="text" id="desig" value="HOUSEMAID"/>
+          </div>
+          <div class="fg">
+            <div class="fg-lbl"><span class="lbl-en">Salary</span><span class="lbl-ar arabic">الراتب</span></div>
+            <input type="text" id="salary" placeholder="—"/>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fg-lbl"><span class="lbl-en">Contract Period</span><span class="lbl-ar arabic">مدة العقد</span></div>
+          <input type="text" id="contract" value="2 YEARS"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTACHMENTS -->
+    <div class="fsec">
+      <div class="shead"><span class="shead-en">📎 Attachments File Uploads</span><span class="shead-ar">المرفقات والملفات</span></div>
+      <div class="sfields">
+        <div class="fg" id="fg-photo">
+          <div class="fg-lbl"><span class="lbl-en req">Candidate Full Photo (JPG/PNG)</span></div>
+          <div class="up-zone" id="zone-photo" onclick="document.getElementById('inp-photo').click()">
+            <input type="file" id="inp-photo" accept="image/*" onchange="handleUp('photo',this)"/>
+            <div id="up-photo-empty">
+              <div class="up-icon">🖼️</div>
+              <div class="up-title-en">Upload Candidate Image / تحميل الصورة</div>
+            </div>
+            <div class="up-prev" id="up-photo-prev">
+              <div class="up-thumb"><img id="thumb-photo" src="" alt=""/></div>
+              <div class="up-info"><div class="up-fname" id="thumb-photo-name"></div></div>
+              <button class="btn-rm" onclick="clearUp(event,'photo')">✕</button>
+            </div>
+          </div>
+          <div class="err-msg">You must upload the candidate photo / يجب رفع صورة المتقدم</div>
+        </div>
+
+        <div class="fg" id="fg-pdf">
+          <div class="fg-lbl"><span class="lbl-en req">Official Passport Document (PDF Only)</span></div>
+          <div class="up-zone" id="zone-pdf" onclick="document.getElementById('inp-pdf').click()">
+            <input type="file" id="inp-pdf" accept="application/pdf" onchange="handleUp('pdf',this)"/>
+            <div id="up-pdf-empty">
+              <div class="up-icon">📄</div>
+              <div class="up-title-en">Import Passport PDF / إدخال جواز السفر PDF</div>
+            </div>
+            <div class="up-prev" id="up-pdf-prev">
+              <div class="up-thumb" style="background:#b32424; color:#fff; font-size:0.8rem; font-weight:bold;">PDF</div>
+              <div class="up-info"><div class="up-fname" id="thumb-pdf-name"></div></div>
+              <button class="btn-rm" onclick="clearUp(event,'pdf')">✕</button>
+            </div>
+          </div>
+          <div class="err-msg">You must attach the passport PDF document / يجب تحميل ملف الجواز بصيغة PDF</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap-submit">
+    <button class="btn-submit" onclick="submit()">
+      <span>✦ Generate Document</span>
+      <span class="ar">توليد المستند المعاين</span>
+    </button>
+  </div>
+</div>
+
+<!-- PAGE 2 — PREVIEW -->
+<div class="page" id="p2">
+  <div class="p2in">
+    <div class="ldr-blk" id="ldrBlk">
+      <div class="ldr-spinner"></div>
+      <div class="ldr-title">Generating Full Profile Sheet... / جاري إنشاء المستند...</div>
+    </div>
+
+    <div class="ppwrap" id="ppWrap">
+      <div class="agency-doc" id="documentToPrint">
+        <!-- Header Section -->
+        <div class="agency-hdr">
+          <div class="agency-logo-txt">SABRI KHALAF<br>MHA<span>بنين / BENIN</span></div>
+          <div class="agency-hdr-center">MEDINA HUSSEN FOREIGN EMPLOYMENT AGENCY<div>وكالة مدينا حسين للاستخدام الخارجي</div></div>
+          <div class="benin-flag-block"><div class="bf-green"></div><div class="bf-right"><div class="bf-yellow"></div><div class="bf-red"></div></div></div>
+        </div>
+
+        <!-- Upper Profile Row -->
+        <div class="profile-section">
+          <div class="full-photo-box"><img id="out-full-img" src="" alt="Full Candidate"/></div>
+          <div style="width:100%;">
+            <table class="doc-table">
+              <thead><tr><th style="width:50%;">NAME OF THE APPLICANT</th><th class="ar-th" style="width:50%;">اسم مقدم الطلب</th></tr></thead>
+              <tbody><tr><td colspan="2" style="font-size:1.1rem; font-weight:bold; color:var(--navy); padding:8px;" id="out-fullname">—</td></tr></tbody>
+            </table>
+            <table class="doc-table">
+              <thead><tr><th colspan="2">APPLICANT DETAILS</th><th colspan="2" class="ar-th">بيانات مقدم الطلب</th></tr></thead>
+              <tbody>
+                <tr><td class="w-30">Nationality</td><td class="w-20" id="out-nat">—</td><td class="w-30 arabic">الجنسية</td><td class="w-20">BENINESE</td></tr>
+                <tr><td class="w-30">Religion</td><td class="w-20" id="out-rel">—</td><td class="w-30 arabic">الديانة</td><td class="w-20">—</td></tr>
+                <tr><td class="w-30">Date of Birth</td><td class="w-20" id="out-dob">—</td><td class="w-30 arabic">تاريخ الميلاد</td><td class="w-20">—</td></tr>
+                <tr><td class="w-30">Age</td><td class="w-20" id="out-age">—</td><td class="w-30 arabic">العمر</td><td class="w-20">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Personal Details -->
+        <table class="doc-table">
+          <thead><tr><th colspan="2">Personal Details</th><th colspan="2" class="ar-th">البيانات الشخصية</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Place of Birth</strong></td><td id="out-pob">—</td><td class="arabic">مكان الميلاد</td><td>COTONOU</td></tr>
+            <tr><td><strong>Marital Status</strong></td><td id="out-marital">—</td><td class="arabic">الحالة الإجتماعية</td><td>—</td></tr>
+            <tr><td><strong>No. of Childs</strong></td><td id="out-child">—</td><td class="arabic">عدد الأطفال</td><td>—</td></tr>
+            <tr><td><strong>Height</strong></td><td id="out-height">—</td><td class="arabic">الطول</td><td>—</td></tr>
+            <tr><td><strong>Weight</strong></td><td id="out-weight">—</td><td class="arabic">الوزن</td><td>—</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Education & Languages -->
+        <table class="doc-table">
+          <thead><tr><th style="width:50%;">Primary School — التعليم الابتدائي</th><th style="width:50%;">High School — التعليم الثانوي</th></tr></thead>
+          <tbody><tr><td id="out-primary" style="height:35px;">—</td><td id="out-high" style="height:35px;">—</td></tr></tbody>
+        </table>
+        <table class="doc-table">
+          <thead><tr><th colspan="4">Languages Knowledge / اللغات واللهجات</th></tr></thead>
+          <tbody><tr><td style="width:25%;"><strong>English / الإنجليزية</strong></td><td id="out-lang-en">NO</td><td style="width:25%;"><strong>Arabic / العربية</strong></td><td id="out-lang-ar">NO</td></tr></tbody>
+        </table>
+
+        <!-- Experiences -->
+        <table class="doc-table">
+          <thead><tr><th colspan="3">Work Experiences / خبرة العمل</th></tr></thead>
+          <tbody>
+            <tr><td><strong>COUNTRY / البلد</strong></td><td><strong>PERIOD / المدة</strong></td><td><strong>DURATION / تاريخ</strong></td></tr>
+            <tr><td id="out-exp-cty">—</td><td id="out-exp-per">—</td><td id="out-exp-dur">—</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Employment & Passport Table Summary -->
+        <table class="doc-table">
+          <thead><tr><th colspan="2">Employment & Passport Details</th><th colspan="2" class="ar-th">تفاصيل العمل والجواز</th></tr></thead>
+          <tbody>
+            <tr><td class="w-25"><strong>Designation</strong></td><td id="out-job">—</td><td class="w-25 arabic">المهنة</td><td>HOUSEMAID</td></tr>
+            <tr><td><strong>Salary</strong></td><td id="out-sal">—</td><td class="arabic">الراتب</td><td>—</td></tr>
+            <tr><td><strong>Contract Period</strong></td><td id="out-contract">—</td><td class="arabic">مدة العقد</td><td>2 YEARS</td></tr>
+            <tr><td><strong>Mobile Number</strong></td><td id="out-mob" colspan="3" style="font-weight:bold;">—</td></tr>
+            <tr><td><strong>Passport Number</strong></td><td id="out-pp-number">—</td><td class="arabic">رقم الجواز</td><td>—</td></tr>
+            <tr><td><strong>Place of Issue</strong></td><td id="out-pp-place">—</td><td class="arabic">مكان الإصدار</td><td>—</td></tr>
+            <tr><td><strong>Date of Issue</strong></td><td id="out-pp-issue">—</td><td class="arabic">تاريخ الإصدار</td><td>—</td></tr>
+            <tr><td><strong>Date of Expiry</strong></td><td id="out-pp-expiry">—</td><td class="arabic">تاريخ الانتهاء</td><td>—</td></tr>
+          </tbody>
+        </table>
+
+      <div class="conf-card">
+        <div style="font-weight:bold; text-align:center; font-size:0.85rem; margin-bottom:10px;" id="pdf-attached-notice">📄 Connected Passport PDF: Loaded successfully.</div>
+        <div class="conf-btns">
+          <button class="btn-dl" onclick="downloadDocument()">📥 Download Sheet / تحميل الاستمارة</button>
+          <button class="btn-no" onclick="goBack()">✎ Back & Edit / تعديل</button>
+          <button class="btn-yes" onclick="confirm_send()">✔ Verify & Finalize / تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3 — SUCCESS -->
+<div class="page" id="p3">
+  <div class="suc-in">
+    <div class="suc-ring">✓</div>
+    <h2>File Submissions Ready!</h2>
+    <p style="margin-top:10px; opacity:0.8;">The generated application matching your sheet has been saved.</p>
+    <button class="btn-home" onclick="goHome()">🏠 Finish & Reset</button>
+  </div>
+</div>
+
+<script>
+const D = { photoSrc: null, pdfFile: null, age: '' };
+
+document.getElementById('dob').addEventListener('change', function(){
+  if(!this.value) return;
+  const birth = new Date(this.value);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+  document.getElementById('age').value = age;
+  D.age = age;
+});
+
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function handleUp(type, inp){
+  const file = inp.files[0]; if(!file) return;
+  
+  document.getElementById('fg-'+type).classList.remove('has-err');
+  document.getElementById('zone-'+type).classList.add('filled');
+  document.getElementById('up-'+type+'-empty').style.display = 'none';
+  document.getElementById('up-'+type+'-prev').classList.add('show');
+  document.getElementById('thumb-'+type+'-name').textContent = file.name;
+  
+  if(type === 'photo') {
+    const r = new FileReader();
+    r.onload = e => {
+      document.getElementById('thumb-photo').src = e.target.result;
+      D.photoSrc = e.target.result;
+    };
+    r.readAsDataURL(file);
+  } else if(type === 'pdf') {
+    D.pdfFile = file;
+  }
+}
+
+function clearUp(e, type){
+  e.stopPropagation();
+  document.getElementById('inp-'+type).value = '';
+  document.getElementById('zone-'+type).classList.remove('filled');
+  document.getElementById('up-'+type+'-empty').style.display = 'block';
+  document.getElementById('up-'+type+'-prev').classList.remove('show');
+  if(type === 'photo') D.photoSrc = null;
+  if(type === 'pdf') D.pdfFile = null;
+}
+
+function validate(){
+  let ok = true;
+  ['nom','prenom','dob','sex','ppnum'].forEach(id=>{
+    const el = document.getElementById(id);
+    const pGroup = document.getElementById('fg-' + id);
+    if(!el || !el.value.trim()){
+      if(pGroup) pGroup.classList.add('has-err');
+      ok = false;
+    } else {
+      if(pGroup) pGroup.classList.remove('has-err');
+    }
+  });
+  
+  if(!D.photoSrc) { document.getElementById('fg-photo').classList.add('has-err'); ok = false; }
+  else { document.getElementById('fg-photo').classList.remove('has-err'); }
+  
+  if(!D.pdfFile) { document.getElementById('fg-pdf').classList.add('has-err'); ok = false; }
+  else { document.getElementById('fg-pdf').classList.remove('has-err'); }
+  
+  return ok;
+}
+
+function fmtDate(v){
+  if(!v) return '—';
+  const d = new Date(v);
+  const m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return d.getDate() + ' ' + m[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function mrzExpiry() {
+  const val = document.getElementById('ppexp').value;
+  return val ? val.replace(/-/g,'').slice(2) : '301219';
+}
+
+function fillData(){
+  const nom = document.getElementById('nom').value.toUpperCase();
+  const pre = document.getElementById('prenom').value.toUpperCase();
+  const dob = document.getElementById('dob').value;
+  const num = document.getElementById('ppnum').value.toUpperCase();
+  
+  document.getElementById('out-fullname').textContent = nom + ' ' + pre;
+  document.getElementById('out-nat').textContent = document.getElementById('nat').value.toUpperCase();
+  document.getElementById('out-rel').textContent = document.getElementById('religion').value;
+  document.getElementById('out-dob').textContent = fmtDate(dob);
+  document.getElementById('out-age').textContent = D.age + ' ANS';
+  document.getElementById('out-pob').textContent = document.getElementById('pob').value.toUpperCase();
+  document.getElementById('out-marital').textContent = document.getElementById('marital').value;
+  document.getElementById('out-child').textContent = document.getElementById('children').value;
+  document.getElementById('out-height').textContent = document.getElementById('height').value || '1.52 CM';
+  document.getElementById('out-weight').textContent = document.getElementById('weight').value || '60 KG';
+  document.getElementById('out-primary').textContent = document.getElementById('primary').value || 'PASSED';
+  document.getElementById('out-high').textContent = document.getElementById('highschool').value || 'PASSED';
+  
+  document.getElementById('out-lang-en').textContent = document.getElementById('lang-en-chk').checked ? 'YES' : 'NO';
+  document.getElementById('out-lang-ar').textContent = document.getElementById('lang-ar-chk').checked ? 'YES' : 'NO';
+  
+  document.getElementById('out-exp-cty').textContent = document.getElementById('work-country').value;
+  document.getElementById('out-exp-per').textContent = document.getElementById('work-period').value || '2 YEARS';
+  document.getElementById('out-exp-dur').textContent = document.getElementById('work-dur').value || '2 YEARS';
+  
+  document.getElementById('out-job').textContent = document.getElementById('desig').value;
+  document.getElementById('out-sal').textContent = document.getElementById('salary').value || '—';
+  document.getElementById('out-contract').textContent = document.getElementById('contract').value;
+  document.getElementById('out-mob').textContent = document.getElementById('mobile').value || '65938288';
+
+  document.getElementById('out-full-img').src = D.photoSrc;
+
+  if (D.pdfFile) {
+    document.getElementById('pdf-attached-notice').textContent = `📄 Connected Passport PDF: "${D.pdfFile.name}" / ملف الجواز جاهز`;
+  }
+
+  const ppplace = document.getElementById('ppplace') ? document.getElementById('ppplace').value.toUpperCase() : 'COTONOU';
+  const ppissue = document.getElementById('ppissue') ? document.getElementById('ppissue').value : '';
+  const ppexp = document.getElementById('ppexp') ? document.getElementById('ppexp').value : '';
+
+  document.getElementById('out-pp-number').textContent = num || '—';
+  document.getElementById('out-pp-place').textContent = ppplace || 'COTONOU';
+  document.getElementById('out-pp-issue').textContent = ppissue ? fmtDate(ppissue) : '—';
+  document.getElementById('out-pp-expiry').textContent = ppexp ? fmtDate(ppexp) : '—';
+}
+
+function submit(){
+  if(!validate()) return;
+  show('p2');
+  document.getElementById('ldrBlk').style.display = 'flex';
+  document.getElementById('ppWrap').classList.remove('show');
+  
+  setTimeout(()=>{
+    fillData();
+    document.getElementById('ldrBlk').style.display = 'none';
+    document.getElementById('ppWrap').classList.add('show');
+  }, 1200);
+}
+
+function downloadDocument() {
+  const target = document.getElementById('documentToPrint');
+  const nom = document.getElementById('nom').value.toUpperCase() || 'CANDIDATE';
+  
+  html2canvas(target, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff'
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `Application_Sheet_${nom}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+function goBack(){ show('p1'); }
+function confirm_send(){ show('p3'); }
+function goHome(){ window.location.reload(); }
+</script>
+</body>
+</html>
