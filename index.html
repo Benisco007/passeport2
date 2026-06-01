@@ -249,6 +249,14 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 .full-photo-box{
   border:1px solid #000; height:160px;
   background:#f0f0f0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.full-photo-box::before{
+  content:'👤';
+  font-size:3.5rem;
+  opacity:0.25;
+  position:absolute;
 }
 .full-photo-box img{ width:100%; height:100%; object-fit:cover; }
 
@@ -878,7 +886,16 @@ function fillData(){
   document.getElementById('out-contract').textContent = document.getElementById('contract').value;
   document.getElementById('out-mob').textContent = document.getElementById('mobile').value || '65938288';
 
-  document.getElementById('out-full-img').src = D.photoSrc;
+ const outImg = document.getElementById('out-full-img');
+if(D.photoSrc){
+  outImg.src = D.photoSrc;
+  outImg.style.display = 'block';
+  outImg.style.position = 'relative';
+  outImg.style.zIndex = '1';
+} else {
+  outImg.src = '';
+  outImg.style.display = 'none';
+} 
 
   if (D.pdfFile) {
     document.getElementById('pdf-attached-notice').textContent = '📄 Connected Passport PDF: "' + D.pdfFile.name + '" / ملف الجواز جاهز';
