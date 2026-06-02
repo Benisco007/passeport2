@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Passport Application — طلب جواز السفر</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Amiri:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
 <style>
 :root{
@@ -94,9 +97,9 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 
 /* PAGE 2 — LOADER + PREVIEW */
 #p2{background:#f3f5f9; min-height:100vh;}
-.p2in{max-width:720px; width:100%; margin:0 auto; padding:16px; display:flex; flex-direction:column;}
+.p2in{max-width:750px; width:100%; margin:0 auto; padding:16px; display:flex; flex-direction:column;}
 
-/* ── Loader overlay ── */
+/* Loader */
 .ldr-blk{
   display:none; flex-direction:column; align-items:center; justify-content:center;
   padding:60px 20px; min-height:80vh;
@@ -120,7 +123,6 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 .sdot{ width:22px; height:22px; border-radius:50%; flex-shrink:0; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.58rem; color:var(--muted); transition:all .3s; }
 .stp.on .sdot{ background:var(--navy3); border-color:var(--gold); color:var(--gold); animation:ping .9s ease-in-out infinite; }
 .stp.ok .sdot{background:var(--success); border-color:var(--success); color:#fff;}
-@keyframes ping{ 0%,100%{box-shadow:0 0 0 0 rgba(200,168,75,.4);} 50%{box-shadow:0 0 0 6px rgba(200,168,75,0);} }
 
 .ppwrap{display:none; flex-direction:column; gap:20px;}
 .ppwrap.show{display:flex;}
@@ -148,11 +150,14 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 .hdr-right-table .ar-col{ font-family:'Amiri',serif; direction:rtl; text-align:right; color:#555; width:25%; }
 .mobile-row{ margin-top:6px; font-weight:bold; font-size:0.9rem; color:#0b1d3a; letter-spacing:1px; text-align:right; }
 
-/* Photo + nom */
-.profile-section{ display:grid; grid-template-columns:120px 1fr; gap:10px; margin-bottom:8px; align-items:start; }
-.full-photo-box{ border:1px solid #000; height:160px; background:#f0f0f0; overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative; }
-.full-photo-box::before{ content:'👤'; font-size:3.5rem; opacity:0.25; position:absolute; }
-.full-photo-box img{ width:100%; height:100%; object-fit:cover; }
+/* REPOSITIONNEMENT ET EXPANSION DE LA ZONE PHOTO CANDIDAT */
+.profile-section{ display:grid; grid-template-columns:170px 1fr; gap:14px; margin-bottom:8px; align-items:start; }
+.full-photo-box{ 
+  border:1.5px solid var(--navy); height:260px; width:170px; background:#f5f7fa; 
+  overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative; border-radius:6px;
+}
+.full-photo-box::before{ content:'👤 Plan Complet'; font-size:0.65rem; font-weight:bold; color:var(--muted); opacity:0.4; position:absolute; bottom:8px; }
+.full-photo-box img{ width:100%; height:100%; object-fit:contain; background:#f5f7fa; }
 
 /* Tables */
 .doc-table{ width:100%; border-collapse:collapse; margin-bottom:6px; font-size:0.68rem; }
@@ -171,24 +176,16 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 .btn-yes,.btn-no,.btn-dl{ width:100%; padding:14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; border:none; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; }
 .btn-yes{ background:#1a6645; color:#fff; }
 .btn-no{ background:#e0e0e0; color:#333; }
-.btn-dl{ background:#0b1d3a; color:#e6c96a; }
+.btn-dl{ background:#0b1d3a; color:#e6c96a; box-shadow: 0 4px 12px rgba(11,29,58,0.2); }
 
 /* REPARATIONS RESPONSIVES MOBILE */
 @media(max-width:600px){
   .skills-row{ grid-template-columns:1fr 1fr; }
-  .profile-section{ grid-template-columns:100px 1fr; }
-}
-@media(max-width:400px){
-  .doc-table td:last-child, .doc-table th:last-child, .hdr-right-table td.ar-col{ display:none; }
-  .agency-doc{ padding:8px; font-size:0.65rem; }
-  .doc-table{ font-size:0.62rem; }
-  .hdr-right-table{ font-size:0.62rem; }
-  .agency-hdr{ grid-template-columns:58px 1fr; gap:6px; }
-  .benin-flag-block{ width:52px; height:32px; }
-  .doc-table td, .doc-table th{ word-break:break-word; max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .profile-section{ grid-template-columns:140px 1fr; }
+  .full-photo-box { width:140px; height:210px; }
 }
 
-/* PAGE 3 — SUCCESS */
+/* Page 3 Success */
 #p3{ background:#0b1d3a; color:#fff; min-height:100vh; align-items:center; justify-content:center; padding:40px 20px; text-align:center; }
 
 /* Styles zone uploads */
@@ -236,19 +233,19 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
           <div class="fg" id="fg-nom">
             <div class="fg-lbl"><span class="lbl-en req">Surname</span><span class="lbl-ar arabic">اللقب</span></div>
             <input type="text" id="nom" placeholder="e.g. TOSSAVI"/>
-            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+            <div class="err-msg">This field is mandatory</div>
           </div>
           <div class="fg" id="fg-prenom">
             <div class="fg-lbl"><span class="lbl-en req">Given Names</span><span class="lbl-ar arabic">الاسم الكامل</span></div>
             <input type="text" id="prenom" placeholder="e.g. Affi Philomene"/>
-            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+            <div class="err-msg">This field is mandatory</div>
           </div>
         </div>
         <div class="frow">
           <div class="fg" id="fg-dob">
             <div class="fg-lbl"><span class="lbl-en req">Date of Birth</span><span class="lbl-ar arabic">تاريخ الميلاد</span></div>
             <input type="date" id="dob"/>
-            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+            <div class="err-msg">This field is mandatory</div>
           </div>
           <div class="fg">
             <div class="fg-lbl"><span class="lbl-en">Age</span><span class="lbl-ar arabic">العمر</span></div>
@@ -263,7 +260,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
               <option value="M">Male / ذكر</option>
               <option value="F">Female / أنثى</option>
             </select>
-            <div class="err-msg">This field is mandatory / هذا الحقل مطلوب</div>
+            <div class="err-msg">This field is mandatory</div>
           </div>
           <div class="fg" id="fg-nat">
             <div class="fg-lbl"><span class="lbl-en req">Nationality</span><span class="lbl-ar arabic">الجنسية</span></div>
@@ -300,17 +297,17 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
         <div class="frow">
           <div class="fg">
             <div class="fg-lbl"><span class="lbl-en">Height (m)</span><span class="lbl-ar arabic">الطول</span></div>
-            <input type="text" id="height" placeholder="e.g. 1.52 CM"/>
+            <input type="text" id="height" value="1.52 CM"/>
           </div>
           <div class="fg">
             <div class="fg-lbl"><span class="lbl-en">Weight (kg)</span><span class="lbl-ar arabic">الوزن</span></div>
-            <input type="text" id="weight" placeholder="e.g. 60 KG"/>
+            <input type="text" id="weight" value="60 KG"/>
           </div>
         </div>
         <div class="frow">
           <div class="fg">
             <div class="fg-lbl"><span class="lbl-en">Mobile Number</span></div>
-            <input type="text" id="mobile" placeholder="e.g. 65938288"/>
+            <input type="text" id="mobile" value="65938288"/>
           </div>
         </div>
       </div>
@@ -390,8 +387,8 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
       <div class="sfields">
         <div class="frow3">
           <div class="fg"><div class="fg-lbl"><span class="lbl-en">Country</span><span class="lbl-ar arabic">البلد</span></div><input type="text" id="work-country" value="BAHRAIN"/></div>
-          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Period</span><span class="lbl-ar arabic">المدة</span></div><input type="text" id="work-period" placeholder="e.g. 2 YEARS"/></div>
-          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Duration</span><span class="lbl-ar arabic">تاريخ</span></div><input type="text" id="work-dur" placeholder="e.g. 2 YEARS"/></div>
+          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Period</span><span class="lbl-ar arabic">المدة</span></div><input type="text" id="work-period" value="2 YEARS"/></div>
+          <div class="fg"><div class="fg-lbl"><span class="lbl-en">Duration</span><span class="lbl-ar arabic">تاريخ</span></div><input type="text" id="work-dur" value="2 YEARS"/></div>
         </div>
       </div>
     </div>
@@ -420,12 +417,12 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
       <div class="shead"><span class="shead-en">📎 Attachments File Uploads</span><span class="shead-ar">المرفقات والملفات</span></div>
       <div class="sfields">
         <div class="fg" id="fg-photo">
-          <div class="fg-lbl"><span class="lbl-en req">Candidate Full Photo (JPG/PNG)</span></div>
+          <div class="fg-lbl"><span class="lbl-en req">Candidate Full Photo (JPG/PNG — Plan Complet)</span></div>
           <div class="up-zone" id="zone-photo" onclick="document.getElementById('inp-photo').click()">
             <input type="file" id="inp-photo" accept="image/*" onchange="handleUp('photo',this)"/>
             <div id="up-photo-empty">
               <div class="up-icon">🖼️</div>
-              <div class="up-title-en">Upload Candidate Image / تحميل الصورة</div>
+              <div class="up-title-en">Upload Candidate Image / تحميل الصورة الكاملة</div>
             </div>
             <div class="up-prev" id="up-photo-prev">
               <div class="up-thumb"><img id="thumb-photo" src="" alt=""/></div>
@@ -433,31 +430,31 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
               <button class="btn-rm" onclick="clearUp(event,'photo')">✕</button>
             </div>
           </div>
-          <div class="err-msg">You must upload the candidate photo / يجب رفع صورة المتقدم</div>
+          <div class="err-msg">You must upload the candidate photo</div>
         </div>
 
         <div class="fg" id="fg-pdf">
-          <div class="fg-lbl"><span class="lbl-en req">Official Passport Document (PDF Only)</span></div>
+          <div class="fg-lbl"><span class="lbl-en req">Official Passport Document (PDF or IMAGE)</span></div>
           <div class="up-zone" id="zone-pdf" onclick="document.getElementById('inp-pdf').click()">
-            <input type="file" id="inp-pdf" accept="application/pdf" onchange="handleUp('pdf',this)"/>
+            <input type="file" id="inp-pdf" accept="application/pdf, image/*" onchange="handleUp('pdf',this)"/>
             <div id="up-pdf-empty">
               <div class="up-icon">📄</div>
-              <div class="up-title-en">Import Passport PDF / إدخال جواز السفر PDF</div>
+              <div class="up-title-en">Import Passport / إدخل جواز السفر (ملف أو صورة)</div>
             </div>
             <div class="up-prev" id="up-pdf-prev">
-              <div class="up-thumb" style="background:#b32424; color:#fff; font-size:0.8rem; font-weight:bold;">PDF</div>
+              <div class="up-thumb" id="passport-thumb-box" style="background:#1e3f7a; color:#fff; font-size:0.75rem; font-weight:bold;">DOC</div>
               <div class="up-info"><div class="up-fname" id="thumb-pdf-name"></div></div>
               <button class="btn-rm" onclick="clearUp(event,'pdf')">✕</button>
             </div>
           </div>
-          <div class="err-msg">You must attach the passport PDF document / يجب تحميل ملف الجواز بصيغة PDF</div>
+          <div class="err-msg">You must attach the passport document</div>
         </div>
       </div>
     </div>
   </div>
 
   <div class="wrap-submit">
-    <button class="btn-submit" onclick="submit()">
+    <button type="button" class="btn-submit" onclick="processForm()">
       <span>✦ Generate Document</span>
       <span class="ar">توليد المستند المعاين</span>
     </button>
@@ -484,7 +481,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 
     <div class="ppwrap" id="ppWrap">
       
-      <div class="agency-doc" id="documentToPrint" style="background-color: #ffffff;">
+      <div class="agency-doc" id="documentToPrint" style="background-color: #ffffff; width:700px; margin: 0 auto;">
         <div class="agency-hdr">
           <div class="agency-hdr-left">
             <div class="benin-flag-block">
@@ -601,18 +598,28 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
 
-      <div id="pdf-preview-block" style="display:none; background:#fff; border:1px solid var(--border); border-radius:12px; padding:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-        <div style="font-weight:600; color:var(--navy); margin-bottom:10px; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
-          <span>📄 Passport PDF Attachment Preview / معاينة جواز السفر المرفق</span>
+      <div class="agency-doc" id="passportPageToPrint" style="background-color: #ffffff; width:700px; margin: 0 auto; display:none; min-height:920px; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
+        <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:#0b1d3a; margin-bottom:25px; border-bottom:2px dashed #0b1d3a; width:100%; padding-bottom:10px; text-align:center; letter-spacing:2px;">
+          ATTACHED PASSPORT DOCUMENT / وثيقة جواز السفر المرفقة
+        </h3>
+        <div style="width:100%; display:flex; justify-content:center; align-items:center; flex:1;">
+          <img id="out-passport-img" src="" style="max-width:100%; max-height:820px; object-fit:contain; border:1px solid #ccc; box-shadow:0 4px 10px rgba(0,0,0,0.1);" alt=""/>
         </div>
-        <iframe id="pdf-viewer" style="width:100%; height:500px; border:1px solid #bbb; border-radius:8px; background:#f9f9f9;"></iframe>
+      </div>
+
+      <div id="pdf-preview-block" style="display:none; background:#fff; border:1px solid var(--border); border-radius:12px; padding:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="font-weight:600; color:var(--navy); margin-bottom:10px; font-size:0.85rem;">
+          <span>📄 Passport Document Live Preview / معاينة جواز السفر المرفق</span>
+        </div>
+        <iframe id="pdf-viewer" style="width:100%; height:450px; border:1px solid #bbb; border-radius:8px; background:#f9f9f9; display:none;"></iframe>
+        <img id="image-viewer" style="width:100%; max-height:450px; object-fit:contain; border:1px solid #bbb; border-radius:8px; background:#f9f9f9; display:none;" alt=""/>
       </div>
 
       <div class="conf-card">
-        <div style="text-align:center; font-size:0.82rem; margin-bottom:12px; color:#0b1d3a; font-weight:600;" id="pdf-attached-notice">📄 Passport PDF attached successfully</div>
+        <div style="text-align:center; font-size:0.82rem; margin-bottom:12px; color:#1a6645; font-weight:600;" id="pdf-attached-notice">✓ Passport Document Attached Successfully</div>
         <div class="conf-btns">
-          <button class="btn-dl" onclick="downloadDocument()">📥 Download Sheet / تحميل الاستمارة</button>
-          <button class="btn-no" onclick="goBack()">✎ Back & Edit / تعديل</button>
+          <button class="btn-dl" onclick="downloadDocument()">📥 Download Full 2-Page PDF / تحميل ملف PDF المدمج</button>
+          <button class="btn-no" onclick="goBack()">✎ Back & Edit / تعديل البيانات</button>
           <button class="btn-yes" onclick="confirm_send()">🏠 Done — Back to Home / العودة للرئيسية</button>
         </div>
       </div>
@@ -627,20 +634,26 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
     <div style="width:76px; height:76px; border-radius:50%; background:rgba(26,102,69,0.2); border:3px solid #1a6645; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:2.2rem; color:#6fcf97;">✓</div>
     <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; color:#e6c96a; margin-bottom:8px; letter-spacing:1px;">Thank you!</h2>
     <p style="font-family:'Amiri',serif; font-size:1.1rem; color:rgba(200,168,75,0.8); direction:rtl; margin-bottom:16px;">شكراً لك على تعبئة الاستمارة</p>
-    <p style="font-size:0.82rem; color:#a4b3cd; line-height:1.7; margin-bottom:28px; font-family:'DM Sans',sans-serif;">
+    <p style="font-size:0.82rem; color:#a4b3cd; line-height:1.7; margin-bottom:28px;">
       Your application has been successfully recorded.<br/>
       You will be contacted within 48 working hours.<br/>
       <span style="font-family:'Amiri',serif; font-size:0.9rem; direction:rtl; display:block; margin-top:6px; color:rgba(200,168,75,0.6);">سيتم التواصل معك خلال 48 ساعة عمل</span>
     </p>
-    <button onclick="goHome()" style="background:#c8a84b; color:#0b1d3a; padding:15px; border:none; border-radius:10px; width:100%; cursor:pointer; font-weight:700; font-size:0.82rem; letter-spacing:1px; text-transform:uppercase; font-family:'DM Sans',sans-serif; box-shadow:0 4px 15px rgba(200,168,75,0.25);">
+    <button onclick="goHome()" style="background:#c8a84b; color:#0b1d3a; padding:15px; border:none; border-radius:10px; width:100%; cursor:pointer; font-weight:700; font-size:0.82rem; letter-spacing:1px; text-transform:uppercase; box-shadow:0 4px 15px rgba(200,168,75,0.25);">
       🔄 New Application / طلب جديد
     </button>
   </div>
 </div>
 
 <script>
-const D = { photoSrc: null, pdfFile: null, age: '' };
-let activePdfUrl = null; // Mémoire globale de l'URL Blob du PDF pour éviter les fuites de mémoire
+// INITIALISATION SÉCURISÉE DE PDF.JS (ÉVITE LE CRASH AU CHARGEMENT DE LA PAGE)
+const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+if(pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+}
+
+const D = { photoSrc: null, passportType: null, passportFile: null, passportImgSrc: null, age: '' };
+let activePdfUrl = null;
 
 document.getElementById('dob').addEventListener('change', function(){
   if(!this.value) return;
@@ -653,19 +666,17 @@ document.getElementById('dob').addEventListener('change', function(){
 });
 
 function show(id){
-  document.querySelectorAll('.page').forEach(p => {
-    p.classList.remove('active');
-  });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
 }
 
 const STPS = [
-  {id:'st1', lbl:'Verifying information…',        pct:20},
-  {id:'st2', lbl:'Biometric check in progress…',  pct:42},
-  {id:'st3', lbl:'Generating document…',           pct:63},
-  {id:'st4', lbl:'Printing profile sheet…',        pct:84},
-  {id:'st5', lbl:'State seal & finalization…',     pct:100},
+  {id:'st1', lbl:'Verifying information / التحقق من المعلومات', pct:20},
+  {id:'st2', lbl:'Biometric check / الفحص البيومتري',  pct:42},
+  {id:'st3', lbl:'Generating document / إنشاء الوثيقة', pct:63},
+  {id:'st4', lbl:'Printing profile sheet / طباعة الملف', pct:84},
+  {id:'st5', lbl:'State seal & finalization / הختم الرسمي', pct:100},
 ];
 
 function setStep(i){
@@ -700,7 +711,20 @@ function handleUp(type, inp){
     };
     r.readAsDataURL(file);
   } else if(type === 'pdf') {
-    D.pdfFile = file;
+    if (file.type.startsWith('image/')) {
+      D.passportType = 'image';
+      const r = new FileReader();
+      r.onload = e => {
+        D.passportImgSrc = e.target.result;
+        document.getElementById('passport-thumb-box').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;"/>`;
+      };
+      r.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      D.passportType = 'pdf';
+      D.passportFile = file;
+      document.getElementById('passport-thumb-box').innerHTML = 'PDF';
+      document.getElementById('passport-thumb-box').style.background = '#b32424';
+    }
   }
 }
 
@@ -712,8 +736,10 @@ function clearUp(e, type){
   document.getElementById('up-'+type+'-prev').classList.remove('show');
   if(type === 'photo') D.photoSrc = null;
   if(type === 'pdf') {
-    D.pdfFile = null;
+    D.passportType = null; D.passportFile = null; D.passportImgSrc = null;
     if(activePdfUrl) { URL.revokeObjectURL(activePdfUrl); activePdfUrl = null; }
+    document.getElementById('passport-thumb-box').innerHTML = 'DOC';
+    document.getElementById('passport-thumb-box').style.background = '#1e3f7a';
   }
 }
 
@@ -723,8 +749,7 @@ function validate(){
     const el = document.getElementById(id);
     const pGroup = document.getElementById('fg-' + id);
     if(!el || !el.value.trim()){
-      if(pGroup) pGroup.classList.add('has-err');
-      ok = false;
+      if(pGroup) pGroup.classList.add('has-err'); ok = false;
     } else {
       if(pGroup) pGroup.classList.remove('has-err');
     }
@@ -733,7 +758,7 @@ function validate(){
   if(!D.photoSrc) { document.getElementById('fg-photo').classList.add('has-err'); ok = false; }
   else { document.getElementById('fg-photo').classList.remove('has-err'); }
   
-  if(!D.pdfFile) { document.getElementById('fg-pdf').classList.add('has-err'); ok = false; }
+  if(!D.passportType) { document.getElementById('fg-pdf').classList.add('has-err'); ok = false; }
   else { document.getElementById('fg-pdf').classList.remove('has-err'); }
   
   return ok;
@@ -749,15 +774,11 @@ function fmtDate(v){
 function fillData(){
   const nom = document.getElementById('nom').value.toUpperCase();
   const pre = document.getElementById('prenom').value.toUpperCase();
-  const dob = document.getElementById('dob').value;
-  const num = document.getElementById('ppnum').value.toUpperCase();
-  const issEl = document.getElementById('out-issue-footer');
-  if(issEl) issEl.textContent = document.getElementById('ppissue') ? fmtDate(document.getElementById('ppissue').value) : '—';
   
   document.getElementById('out-fullname').textContent = nom + ' ' + pre;
   document.getElementById('out-nat').textContent = document.getElementById('nat').value.toUpperCase();
   document.getElementById('out-rel').textContent = document.getElementById('religion').value;
-  document.getElementById('out-dob').textContent = fmtDate(dob);
+  document.getElementById('out-dob').textContent = fmtDate(document.getElementById('dob').value);
   document.getElementById('out-age').textContent = D.age + ' ANS';
   document.getElementById('out-pob').textContent = document.getElementById('pob').value.toUpperCase();
   document.getElementById('out-marital').textContent = document.getElementById('marital').value;
@@ -778,110 +799,171 @@ function fillData(){
   document.getElementById('out-sal').textContent = document.getElementById('salary').value || '—';
   document.getElementById('out-contract').textContent = document.getElementById('contract').value;
   document.getElementById('out-mob').textContent = document.getElementById('mobile').value || '65938288';
+  
+  const issEl = document.getElementById('out-issue-footer');
+  if(issEl) issEl.textContent = document.getElementById('ppissue') ? fmtDate(document.getElementById('ppissue').value) : '—';
 
-  const outImg = document.getElementById('out-full-img');
-  if(D.photoSrc){
-    outImg.src = D.photoSrc;
-    outImg.style.display = 'block';
-    outImg.style.position = 'relative';
-    outImg.style.zIndex = '1';
-  } else {
-    outImg.src = '';
-    outImg.style.display = 'none';
-  } 
+  document.getElementById('out-full-img').src = D.photoSrc || '';
 
-  // Injection et affichage dynamique du PDF chargé
-  if (D.pdfFile) {
-    document.getElementById('pdf-attached-notice').textContent = '📄 Connected Passport PDF: "' + D.pdfFile.name + '" / ملف الجواز جاهز';
-    
-    if(activePdfUrl) { URL.revokeObjectURL(activePdfUrl); } // Nettoyage de l'ancien lien s'il existe
-    activePdfUrl = URL.createObjectURL(D.pdfFile);
-    
-    document.getElementById('pdf-viewer').src = activePdfUrl;
+  document.getElementById('out-pp-number').textContent = document.getElementById('ppnum').value.toUpperCase() || '—';
+  document.getElementById('out-pp-place').textContent = document.getElementById('ppplace').value.toUpperCase() || 'COTONOU';
+  document.getElementById('out-pp-issue').textContent = fmtDate(document.getElementById('ppissue').value);
+  document.getElementById('out-pp-expiry').textContent = fmtDate(document.getElementById('ppexp').value);
+
+  const outPassImg = document.getElementById('out-passport-img');
+  
+  if (D.passportType === 'image') {
+    outPassImg.src = D.passportImgSrc;
+    document.getElementById('pdf-viewer').style.display = 'none';
+    document.getElementById('image-viewer').src = D.passportImgSrc;
+    document.getElementById('image-viewer').style.display = 'block';
     document.getElementById('pdf-preview-block').style.display = 'block';
-  } else {
-    document.getElementById('pdf-preview-block').style.display = 'none';
+  } else if (D.passportType === 'pdf') {
+    if(activePdfUrl) { URL.revokeObjectURL(activePdfUrl); }
+    activePdfUrl = URL.createObjectURL(D.passportFile);
+    document.getElementById('image-viewer').style.display = 'none';
+    document.getElementById('pdf-viewer').src = activePdfUrl;
+    document.getElementById('pdf-viewer').style.display = 'block';
+    document.getElementById('pdf-preview-block').style.display = 'block';
+
+    const fileReader = new FileReader();
+    fileReader.onload = function() {
+      const typedarray = new Uint8Array(this.result);
+      pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+        pdf.getPage(1).then(function(page) {
+          const viewport = page.getViewport({scale: 2.0});
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          
+          page.render({canvasContext: context, viewport: viewport}).promise.then(function() {
+            outPassImg.src = canvas.toDataURL('image/png');
+          });
+        });
+      });
+    };
+    fileReader.readAsArrayBuffer(D.passportFile);
   }
-
-  const ppplace = document.getElementById('ppplace') ? document.getElementById('ppplace').value.toUpperCase() : 'COTONOU';
-  const ppissue = document.getElementById('ppissue') ? document.getElementById('ppissue').value : '';
-  const ppexp = document.getElementById('ppexp') ? document.getElementById('ppexp').value : '';
-
-  document.getElementById('out-pp-number').textContent = num || '—';
-  document.getElementById('out-pp-place').textContent = ppplace || 'COTONOU';
-  document.getElementById('out-pp-issue').textContent = ppissue ? fmtDate(ppissue) : '—';
-  document.getElementById('out-pp-expiry').textContent = ppexp ? fmtDate(ppexp) : '—';
 }
 
-function submit(){
+function processForm(){
   if(!validate()) return;
-
   document.getElementById('pd1').className = 'pdot ok';
   document.getElementById('pl1').classList.add('ok');
   document.getElementById('pd2').className = 'pdot on';
   document.getElementById('pl2l').classList.add('on');
 
   show('p2');
-
   const ldr = document.getElementById('ldrBlk');
   ldr.classList.add('active');
   document.getElementById('ppWrap').classList.remove('show');
 
   setStep(0);
-  const delays = [0, 900, 1800, 2700, 3500];
+  const delays = [0, 800, 1600, 2400, 3200];
   delays.forEach((d, i) => setTimeout(() => setStep(i), d));
 
   setTimeout(() => {
     fillData();
     ldr.classList.remove('active');
     document.getElementById('ppWrap').classList.add('show');
-    
     document.getElementById('pd2').className = 'pdot ok';
     document.getElementById('pl2').classList.add('ok');
     document.getElementById('pd3').className = 'pdot on';
     document.getElementById('pl3l').classList.add('on');
-  }, 4400);
+  }, 4000);
 }
 
-// CORRECTION OPTIMISÉE : Capture ultra-nette sans coupure mobile
-function downloadDocument() {
-  const target = document.getElementById('documentToPrint');
-  const nom = document.getElementById('nom').value.toUpperCase() || 'CANDIDATE';
+// CORRECTION STRATÉGIQUE DU COMPILATEUR PDF MULTI-PAGES EN ASYNC/AWAIT
+async function downloadDocument() {
   const btn = document.querySelector('.btn-dl');
-  
   const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Processing... / جاري التحميل...';
-  
-  // Sauvegarde du style actuel et déploiement temporaire format "Bureau stable" pour html2canvas
-  const originalStyle = target.style.cssText;
-  target.style.width = '700px';
-  target.style.minWidth = '700px';
-  
-  html2canvas(target, {
-    scale: 3, // Force un rendu haute définition (Ultra-HD / 3x la densité standard)
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#ffffff',
-    imageSmoothingEnabled: true,
-    imageSmoothingQuality: 'high'
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `Application_Sheet_${nom}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
+  btn.innerHTML = '⏳ Compiling 2-Page PDF... / جاري التجميع...';
+  btn.disabled = true;
+
+  try {
+    const page1 = document.getElementById('documentToPrint');
+    const page2 = document.getElementById('passportPageToPrint');
+    const nom = document.getElementById('nom').value.toUpperCase() || 'CANDIDATE';
+
+    // Sauvegarde des états d'affichage initiaux
+    const origStyle1 = page1.style.cssText;
+    const origStyle2 = page2.style.cssText;
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Forcer un layout propre de type bureau (700px) pour éviter les distorsions responsives mobiles
+    page1.style.width = '700px'; 
+    page1.style.minWidth = '700px';
     
-    // Rétablissement des dimensions réactives initiales
-    target.style.cssText = originalStyle;
+    // Sortie de la page 2 de son état masqué (display: none) en la plaçant en flex absolu hors écran
+    page2.style.display = 'flex'; 
+    page2.style.width = '700px'; 
+    page2.style.minWidth = '700px';
+    page2.style.position = 'fixed';
+    page2.style.left = '-9999px';
+    page2.style.top = '0';
+
+    // Courte pause asynchrone (100ms) pour laisser le temps au moteur du navigateur d'appliquer le layout
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Capture photographique de la Page 1 (Fiche de profil)
+    const canvas1 = await html2canvas(page1, {
+      scale: 2.3, 
+      useCORS: true, 
+      backgroundColor: '#ffffff',
+      imageSmoothingQuality: 'high',
+      logging: false
+    });
+    
+    // Capture photographique de la Page 2 (Copie du document passeport)
+    const canvas2 = await html2canvas(page2, {
+      scale: 2.3, 
+      useCORS: true, 
+      backgroundColor: '#ffffff',
+      imageSmoothingQuality: 'high',
+      logging: false
+    });
+    
+    // Récupération sécurisée du constructeur de la librairie jsPDF (gère UMD et globals)
+    let GlobalJsPDF = null;
+    if (window.jspdf && window.jspdf.jsPDF) {
+      GlobalJsPDF = window.jspdf.jsPDF;
+    } else if (window.jsPDF) {
+      GlobalJsPDF = window.jsPDF;
+    }
+
+    if (!GlobalJsPDF) {
+      throw new Error("jsPDF library not accessible inside the window scope context.");
+    }
+
+    const pdf = new GlobalJsPDF('p', 'mm', 'a4');
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+
+    // Calcul homothétique des hauteurs images par rapport à la grille de la page A4
+    const imgH1 = (canvas1.height * pdfW) / canvas1.width;
+    const imgH2 = (canvas2.height * pdfW) / canvas2.width;
+
+    // Écriture de la Page 1
+    pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, pdfW, imgH1 > pdfH ? pdfH : imgH1);
+    
+    // Écriture de la Page 2
+    pdf.addPage();
+    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, pdfW, imgH2 > pdfH ? pdfH : imgH2);
+
+    // Déclenchement du téléchargement du fichier PDF final
+    pdf.save(`Application_Sheet_${nom}.pdf`);
+
+    // Restauration propre des styles du DOM d'origine pour éviter de casser l'interface utilisateur
+    page1.style.cssText = origStyle1;
+    page2.style.cssText = origStyle2;
+
+  } catch (err) {
+    console.error("Critical rendering error during document compilation:", err);
+    alert("Le téléchargement a échoué. Veuillez réessayer.");
+  } finally {
     btn.innerHTML = originalText;
-  }).catch(err => {
-    console.error("Error capturing document:", err);
-    target.style.cssText = originalStyle;
-    btn.innerHTML = originalText;
-    alert("Download failed. Please try again.");
-  });
+    btn.disabled = false;
+  }
 }
 
 function goBack(){ show('p1'); }
