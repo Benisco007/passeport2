@@ -205,6 +205,22 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 .up-thumb{ width:50px;height:58px;border-radius:6px;overflow:hidden; border:2px solid var(--gold);flex-shrink:0; background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
 .up-thumb img{width:100%;height:100%;object-fit:cover;}
 .btn-rm{background:none;border:none;cursor:pointer;color:var(--danger);font-size:.9rem;padding:4px;font-weight:bold;}
+.preview-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 14px;
+  background: #f3f5f9;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  justify-content: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 768px) {
+  .preview-scroll-container {
+    justify-content: center;
+  }
+}
 </style>
 </head>
 <body>
@@ -481,7 +497,8 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 
     <div class="ppwrap" id="ppWrap">
       
-      <div class="agency-doc" id="documentToPrint" style="background-color: #ffffff; width:700px; margin: 0 auto;">
+      <div class="preview-scroll-container">
+        <div class="agency-doc" id="documentToPrint" style="background-color: #ffffff; width:700px; margin: 0 auto;">
         <div class="agency-hdr">
           <div class="agency-hdr-left">
             <div class="benin-flag-block">
@@ -560,7 +577,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
         </table>
 
         <table class="doc-table">
-          <thead><tr><th colspan="4">Languages Knowledge / اللغات والمهجات</th></tr></thead>
+          <thead><tr><th colspan="4">Languages Knowledge / اللغات واللهجات</th></tr></thead>
           <tbody><tr>
             <td class="lbl">English / الإنجليزية</td><td id="out-lang-en">NO</td>
             <td class="lbl">Arabic / العربية</td><td id="out-lang-ar">NO</td>
@@ -596,6 +613,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
           <span>/</span>
           <span style="font-family:'Amiri',serif; direction:rtl;">تاريخ الإصدار</span>
         </div>
+      </div>
       </div>
 
       <div class="agency-doc" id="passportPageToPrint" style="background-color: #ffffff; width:700px; margin: 0 auto; display:none; min-height:920px; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
@@ -676,7 +694,7 @@ const STPS = [
   {id:'st2', lbl:'Biometric check / الفحص البيومتري',  pct:42},
   {id:'st3', lbl:'Generating document / إنشاء الوثيقة', pct:63},
   {id:'st4', lbl:'Printing profile sheet / طباعة الملف', pct:84},
-  {id:'st5', lbl:'State seal & finalization / הختم الرسمي', pct:100},
+  {id:'st5', lbl:'State seal & finalization / الختم الرسمي', pct:100},
 ];
 
 function setStep(i){
@@ -754,6 +772,37 @@ function validate(){
       if(pGroup) pGroup.classList.remove('has-err');
     }
   });
+  
+  // Validation : Date de naissance ne doit pas être dans le futur
+  const dobEl = document.getElementById('dob');
+  const dobGroup = document.getElementById('fg-dob');
+  if (dobEl && dobEl.value) {
+    const dobDate = new Date(dobEl.value);
+    const today = new Date();
+    if (dobDate > today) {
+      if (dobGroup) {
+        dobGroup.querySelector('.err-msg').textContent = "Date of birth cannot be in the future / تاريخ الميلاد لا يمكن أن يكون في المستقبل";
+        dobGroup.classList.add('has-err');
+      }
+      ok = false;
+    } else {
+      if (dobGroup) {
+        dobGroup.querySelector('.err-msg').textContent = "This field is mandatory";
+      }
+    }
+  }
+
+  // Validation : Date d'expiration du passeport doit être après la date d'émission
+  const issueEl = document.getElementById('ppissue');
+  const expEl = document.getElementById('ppexp');
+  if (issueEl && expEl && issueEl.value && expEl.value) {
+    const issueDate = new Date(issueEl.value);
+    const expDate = new Date(expEl.value);
+    if (expDate <= issueDate) {
+      alert("La date d'expiration du passeport doit être postérieure à la date d'émission. / Passport expiry date must be after issue date.");
+      ok = false;
+    }
+  }
   
   if(!D.photoSrc) { document.getElementById('fg-photo').classList.add('has-err'); ok = false; }
   else { document.getElementById('fg-photo').classList.remove('has-err'); }
@@ -884,29 +933,34 @@ async function downloadDocument() {
   try {
     const page1 = document.getElementById('documentToPrint');
     const page2 = document.getElementById('passportPageToPrint');
-    const nom = document.getElementById('nom').value.toUpperCase() || 'CANDIDATE';
+    const nom = (document.getElementById('nom').value || 'CANDIDATE').toUpperCase().trim();
 
-    // Sauvegarde des états d'affichage initiaux
-    const origStyle1 = page1.style.cssText;
-    const origStyle2 = page2.style.cssText;
-    
-    // Forcer un layout propre de type bureau (700px) pour éviter les distorsions responsives mobiles
-    page1.style.width = '700px'; 
-    page1.style.minWidth = '700px';
-    
-    // Sortie de la page 2 de son état masqué (display: none) en la plaçant en flex absolu hors écran
-    page2.style.display = 'flex'; 
-    page2.style.width = '700px'; 
-    page2.style.minWidth = '700px';
-    page2.style.position = 'fixed';
-    page2.style.left = '-9999px';
-    page2.style.top = '0';
+    // 1. Cloner page1 et page2 pour éviter toute modification visuelle ou problème de rendu responsive
+    const clone1 = page1.cloneNode(true);
+    clone1.style.display = 'block';
+    clone1.style.position = 'fixed';
+    clone1.style.left = '-9999px';
+    clone1.style.top = '0';
+    clone1.style.width = '700px';
+    clone1.style.minWidth = '700px';
+    clone1.style.transform = 'none';
+    document.body.appendChild(clone1);
 
-    // Courte pause asynchrone (100ms) pour laisser le temps au moteur du navigateur d'appliquer le layout
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const clone2 = page2.cloneNode(true);
+    clone2.style.display = 'flex';
+    clone2.style.position = 'fixed';
+    clone2.style.left = '-9999px';
+    clone2.style.top = '0';
+    clone2.style.width = '700px';
+    clone2.style.minWidth = '700px';
+    clone2.style.transform = 'none';
+    document.body.appendChild(clone2);
 
-    // Capture photographique de la Page 1 (Fiche de profil)
-    const canvas1 = await html2canvas(page1, {
+    // Attendre un court instant pour s'assurer que le DOM a rendu les clones
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    // 2. Capture des deux pages avec html2canvas
+    const canvas1 = await html2canvas(clone1, {
       scale: 2.3, 
       useCORS: true, 
       backgroundColor: '#ffffff',
@@ -914,16 +968,19 @@ async function downloadDocument() {
       logging: false
     });
     
-    // Capture photographique de la Page 2 (Copie du document passeport)
-    const canvas2 = await html2canvas(page2, {
+    const canvas2 = await html2canvas(clone2, {
       scale: 2.3, 
       useCORS: true, 
       backgroundColor: '#ffffff',
       imageSmoothingQuality: 'high',
       logging: false
     });
+
+    // Suppression immédiate des clones du DOM
+    document.body.removeChild(clone1);
+    document.body.removeChild(clone2);
     
-    // Récupération sécurisée du constructeur de la librairie jsPDF (gère UMD et globals)
+    // 3. Récupération de jsPDF
     let GlobalJsPDF = null;
     if (window.jspdf && window.jspdf.jsPDF) {
       GlobalJsPDF = window.jspdf.jsPDF;
@@ -936,26 +993,40 @@ async function downloadDocument() {
     }
 
     const pdf = new GlobalJsPDF('p', 'mm', 'a4');
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = pdf.internal.pageSize.getHeight();
+    const pdfW = pdf.internal.pageSize.getWidth(); // 210mm
+    const pdfH = pdf.internal.pageSize.getHeight(); // 297mm
 
-    // Calcul homothétique des hauteurs images par rapport à la grille de la page A4
+    // Page 1 : Calcul homothétique sans déformation
+    const imgW1 = pdfW;
     const imgH1 = (canvas1.height * pdfW) / canvas1.width;
-    const imgH2 = (canvas2.height * pdfW) / canvas2.width;
-
-    // Écriture de la Page 1
-    pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, pdfW, imgH1 > pdfH ? pdfH : imgH1);
+    let printW1 = imgW1;
+    let printH1 = imgH1;
+    let x1 = 0, y1 = 0;
     
-    // Écriture de la Page 2
+    if (imgH1 > pdfH) {
+      printH1 = pdfH;
+      printW1 = (canvas1.width * pdfH) / canvas1.height;
+      x1 = (pdfW - printW1) / 2;
+    }
+    pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', x1, y1, printW1, printH1);
+    
+    // Page 2 : Calcul homothétique sans déformation
     pdf.addPage();
-    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, pdfW, imgH2 > pdfH ? pdfH : imgH2);
+    const imgW2 = pdfW;
+    const imgH2 = (canvas2.height * pdfW) / canvas2.width;
+    let printW2 = imgW2;
+    let printH2 = imgH2;
+    let x2 = 0, y2 = 0;
+    
+    if (imgH2 > pdfH) {
+      printH2 = pdfH;
+      printW2 = (canvas2.width * pdfH) / canvas2.height;
+      x2 = (pdfW - printW2) / 2;
+    }
+    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', x2, y2, printW2, printH2);
 
-    // Déclenchement du téléchargement du fichier PDF final
+    // 4. Téléchargement du fichier PDF final
     pdf.save(`Application_Sheet_${nom}.pdf`);
-
-    // Restauration propre des styles du DOM d'origine pour éviter de casser l'interface utilisateur
-    page1.style.cssText = origStyle1;
-    page2.style.cssText = origStyle2;
 
   } catch (err) {
     console.error("Critical rendering error during document compilation:", err);
