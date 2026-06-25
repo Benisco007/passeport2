@@ -923,11 +923,36 @@ function processForm(){
   }, 4000);
 }
 
-// CORRECTION STRATÉGIQUE DU COMPILATEUR PDF MULTI-PAGES EN ASYNC/AWAIT
+// GÉNÉRATEUR PDF HAUTE QUALITÉ — ULTRA-NETTETÉ TEXTE + IMAGES (PC & MOBILE)
+// Attend le chargement + décodage complet des images dans un élément DOM
+function waitImagesLoaded(element) {
+  const imgs = element.querySelectorAll('img');
+  const promises = Array.from(imgs).map(img => {
+    if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+  });
+  return Promise.all(promises);
+}
+
+// Aplati un canvas avec un fond blanc (élimine les pixels transparents qui causent les décolorations sur mobile)
+function flattenCanvasWhite(srcCanvas) {
+  const flat = document.createElement('canvas');
+  flat.width = srcCanvas.width;
+  flat.height = srcCanvas.height;
+  const ctx = flat.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, flat.width, flat.height);
+  ctx.drawImage(srcCanvas, 0, 0);
+  return flat;
+}
+
 async function downloadDocument() {
   const btn = document.querySelector('.btn-dl');
   const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Compiling 2-Page PDF... / جاري التجميع...';
+  btn.innerHTML = '⏳ Generating high-quality PDF... / جاري إنشاء ملف PDF...';
   btn.disabled = true;
 
   try {
@@ -937,50 +962,42 @@ async function downloadDocument() {
 
     // 1. Cloner page1 et page2 pour éviter toute modification visuelle ou problème de rendu responsive
     const clone1 = page1.cloneNode(true);
-    clone1.style.display = 'block';
-    clone1.style.position = 'fixed';
-    clone1.style.left = '-9999px';
-    clone1.style.top = '0';
-    clone1.style.width = '700px';
-    clone1.style.minWidth = '700px';
-    clone1.style.transform = 'none';
+    clone1.style.cssText = 'display:block !important; position:fixed !important; left:-9999px !important; top:0 !important; width:700px !important; min-width:700px !important; max-width:700px !important; transform:none !important; zoom:1 !important; opacity:1 !important;';
     document.body.appendChild(clone1);
 
     const clone2 = page2.cloneNode(true);
-    clone2.style.display = 'flex';
-    clone2.style.position = 'fixed';
-    clone2.style.left = '-9999px';
-    clone2.style.top = '0';
-    clone2.style.width = '700px';
-    clone2.style.minWidth = '700px';
-    clone2.style.transform = 'none';
+    clone2.style.cssText = 'display:flex !important; position:fixed !important; left:-9999px !important; top:0 !important; width:700px !important; min-width:700px !important; max-width:700px !important; transform:none !important; zoom:1 !important; opacity:1 !important; flex-direction:column; align-items:center; justify-content:center; min-height:920px; padding:30px; background:#fff;';
     document.body.appendChild(clone2);
 
-    // Attendre un court instant pour s'assurer que le DOM a rendu les clones
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Attendre que les polices Google Fonts (Cormorant, Amiri) soient bien chargées
+    // et que toutes les images (base64/blob) soient décodées par le navigateur
+    await new Promise(resolve => setTimeout(resolve, 600));
+    await Promise.all([waitImagesLoaded(clone1), waitImagesLoaded(clone2)]);
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
 
-    // 2. Capture des deux pages avec html2canvas
-    const canvas1 = await html2canvas(clone1, {
-      scale: 2.3, 
-      useCORS: true, 
+    // 2. Capture ULTRA-HAUTE RÉSOLUTION (scale 4.5 = résolution 4,5x supérieure à l'écran, texte parfaitement net)
+    // allowTaint: true est nécessaire pour capturer les images blob générées par FileReader
+    const H2C_CONFIG = {
+      scale: 4.5,
+      useCORS: true,
+      allowTaint: true,
       backgroundColor: '#ffffff',
-      imageSmoothingQuality: 'high',
-      logging: false
-    });
-    
-    const canvas2 = await html2canvas(clone2, {
-      scale: 2.3, 
-      useCORS: true, 
-      backgroundColor: '#ffffff',
-      imageSmoothingQuality: 'high',
-      logging: false
-    });
+      logging: false,
+      imageTimeout: 15000
+    };
+
+    const rawCanvas1 = await html2canvas(clone1, H2C_CONFIG);
+    const rawCanvas2 = await html2canvas(clone2, H2C_CONFIG);
 
     // Suppression immédiate des clones du DOM
     document.body.removeChild(clone1);
     document.body.removeChild(clone2);
-    
-    // 3. Récupération de jsPDF
+
+    // 3. Aplatissement sur fond blanc pur (élimine les canaux alpha qui causent les décolorations sur mobile)
+    const canvas1 = flattenCanvasWhite(rawCanvas1);
+    const canvas2 = flattenCanvasWhite(rawCanvas2);
+
+    // 4. Récupération de jsPDF
     let GlobalJsPDF = null;
     if (window.jspdf && window.jspdf.jsPDF) {
       GlobalJsPDF = window.jspdf.jsPDF;
@@ -992,14 +1009,21 @@ async function downloadDocument() {
       throw new Error("jsPDF library not accessible inside the window scope context.");
     }
 
+    // Dimensions A4 : 210mm x 297mm
     const pdf = new GlobalJsPDF('p', 'mm', 'a4');
     const pdfW = pdf.internal.pageSize.getWidth(); // 210mm
     const pdfH = pdf.internal.pageSize.getHeight(); // 297mm
 
+    // Encodage PNG sans perte pour la page 1 (fiche de profil — contient du texte très fin)
+    // PNG préserve chaque pixel exactement sans artéfact de compression JPEG sur les contours de lettres
+    const imgData1 = canvas1.toDataURL('image/png');
+
+    // Encodage JPEG haute qualité pour la page 2 (document passeport — contient surtout des photos)
+    const imgData2 = canvas2.toDataURL('image/jpeg', 1.0);
+
     // Page 1 : Calcul homothétique sans déformation
-    const imgW1 = pdfW;
     const imgH1 = (canvas1.height * pdfW) / canvas1.width;
-    let printW1 = imgW1;
+    let printW1 = pdfW;
     let printH1 = imgH1;
     let x1 = 0, y1 = 0;
     
@@ -1008,13 +1032,12 @@ async function downloadDocument() {
       printW1 = (canvas1.width * pdfH) / canvas1.height;
       x1 = (pdfW - printW1) / 2;
     }
-    pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', x1, y1, printW1, printH1);
+    pdf.addImage(imgData1, 'PNG', x1, y1, printW1, printH1);
     
     // Page 2 : Calcul homothétique sans déformation
     pdf.addPage();
-    const imgW2 = pdfW;
     const imgH2 = (canvas2.height * pdfW) / canvas2.width;
-    let printW2 = imgW2;
+    let printW2 = pdfW;
     let printH2 = imgH2;
     let x2 = 0, y2 = 0;
     
@@ -1023,10 +1046,13 @@ async function downloadDocument() {
       printW2 = (canvas2.width * pdfH) / canvas2.height;
       x2 = (pdfW - printW2) / 2;
     }
-    pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', x2, y2, printW2, printH2);
+    pdf.addImage(imgData2, 'JPEG', x2, y2, printW2, printH2);
 
-    // 4. Téléchargement du fichier PDF final
+    // 5. Téléchargement du fichier PDF final
     pdf.save(`Application_Sheet_${nom}.pdf`);
+
+    // 6. Affichage du modal indiquant l'emplacement de téléchargement
+    showDownloadModal();
 
   } catch (err) {
     console.error("Critical rendering error during document compilation:", err);
@@ -1040,6 +1066,40 @@ async function downloadDocument() {
 function goBack(){ show('p1'); }
 function confirm_send(){ show('p3'); }
 function goHome(){ window.location.reload(); }
+
+function showDownloadModal() {
+  document.getElementById('downloadModal').style.display = 'flex';
+}
+function closeDownloadModal() {
+  document.getElementById('downloadModal').style.display = 'none';
+}
 </script>
+
+<!-- Modal de notification de téléchargement réussi -->
+<div id="downloadModal" style="display:none; position:fixed; inset:0; background:rgba(11,29,58,0.6); z-index:9999; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);">
+  <div style="background:#ffffff; border:2px solid var(--gold); border-radius:16px; max-width:480px; width:100%; padding:24px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.3); animation: slideUp 0.3s ease both; box-sizing:border-box;">
+    <div style="font-size:3rem; margin-bottom:12px;">📥</div>
+    <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--navy); margin-bottom:8px; font-weight:700;">Téléchargement réussi ! / تم التحميل بنجاح</h3>
+    <p style="font-size:0.85rem; color:var(--text); line-height:1.6; margin-bottom:18px;">
+      Le fichier PDF a été généré et téléchargé avec succès.
+    </p>
+    <div style="background:var(--bg); border-radius:10px; padding:12px; font-size:0.8rem; color:var(--muted); text-align:left; margin-bottom:20px; border-left:4px solid var(--gold); box-sizing:border-box; overflow-y:auto; max-height:220px;">
+      <strong>Où se trouve votre fichier ?</strong>
+      <ul style="margin-left:16px; margin-top:6px; padding:0; list-style-type: disc; line-height:1.4;">
+        <li><strong>Sur Mobile (Android/iPhone) :</strong> Ouvrez l'application <strong>Fichiers</strong> (ou <strong>Mes Fichiers</strong>) dans votre dossier <strong>Téléchargements</strong>, ou vérifiez la barre de notification de votre téléphone.</li>
+        <li><strong>Sur Ordinateur (PC/Mac) :</strong> Le fichier se trouve dans votre dossier système <strong>Téléchargements</strong> (ou accessible depuis l'historique des téléchargements de votre navigateur).</li>
+      </ul>
+      <hr style="margin:10px 0; border:0; border-top:1px solid var(--border);"/>
+      <strong style="display:block; text-align:right; direction:rtl; font-family:'Amiri',serif; font-size:0.95rem;">أين تجد الملف الخاص بك؟</strong>
+      <ul style="direction:rtl; text-align:right; font-family:'Amiri',serif; font-size:0.9rem; margin-right:16px; margin-top:6px; padding:0; list-style-type: disc; line-height:1.4;">
+        <li><strong>على الهاتف (أندرويد/آيفون):</strong> افتح تطبيق <strong>الملفات</strong> (Files) في مجلد <strong>Downloads</strong> (التحميلات) أو تحقق من شريط الإشعارات.</li>
+        <li><strong>على الكمبيوتر:</strong> ستجد الملف في مجلد <strong>Downloads</strong> (التحميلات) الخاص بنظام التشغيل أو المتصفh.</li>
+      </ul>
+    </div>
+    <button onclick="closeDownloadModal()" style="background:linear-gradient(135deg,var(--navy),var(--navy2)); color:var(--gold2); border:none; padding:12px 24px; border-radius:10px; font-weight:600; font-size:0.85rem; cursor:pointer; width:100%; text-transform:uppercase; letter-spacing:1px; box-shadow:0 4px 12px rgba(11,29,58,0.2);">
+      Fermer / إغلاق
+    </button>
+  </div>
+</div>
 </body>
 </html>
